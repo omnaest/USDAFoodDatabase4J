@@ -19,6 +19,7 @@
 package org.omnaest.usda;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,8 +31,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.omnaest.pdf.PDFUtils;
+import org.omnaest.pdf.PDFUtils.PDFBuilderWithPage;
 import org.omnaest.usda.domain.Food;
 import org.omnaest.usda.domain.FoodsAndNutrients;
 import org.omnaest.usda.domain.Nutrient;
@@ -39,7 +41,12 @@ import org.omnaest.usda.domain.NutrientValue;
 
 public class USDAFoodDBUtilsTest
 {
-	private static final String API_KEY = "UCmapXPH39utkRDoElGVemeISzSQmDROHyb2c9Kf";
+	private static final String API_KEY = Constants.API_KEY;
+
+	public enum Intensity
+	{
+		VERY_LOW, LOW, HIGH, VERY_HIGH
+	}
 
 	public static class FoodAndValue
 	{
@@ -126,7 +133,7 @@ public class USDAFoodDBUtilsTest
 	}
 
 	@Test
-	@Ignore
+	//@Ignore
 	public void testGetFoods() throws Exception
 	{
 		File file = new File("M:\\Body odor research\\databases\\usda\\foods.json");
@@ -136,7 +143,8 @@ public class USDAFoodDBUtilsTest
 
 		//System.out.println(JSONHelper.prettyPrint(foods));
 
-		Set<String> nutrientTerms = Arrays	.asList("tryptophan", "tyrosine", "histidine", "phenylalanine")
+		Set<String> nutrientTerms = Arrays	.asList("tryptophan", "tyrosine", "histidine", "phenylalanine", "Sugars, total", "Alcohol, ethyl",
+													"Glucose (dextrose)", "Fructose", "")
 											.stream()
 											.map(term -> term.toLowerCase())
 											.collect(Collectors.toSet());
@@ -149,20 +157,34 @@ public class USDAFoodDBUtilsTest
 
 		//System.out.println(JSONHelper.prettyPrint(nutrients));
 
-		final int numberOfBuckets = 4;
+		final int numberOfBuckets = Intensity.values().length;
 		Map<String, Set<Integer>> foodIdToBucketIdsMap = new HashMap<>();
+
+		//
+		Set<String> nutrientIds = nutrients	.stream()
+											.map(nutrient -> nutrient.getId())
+											.collect(Collectors.toSet());
+		List<Food> foodsWithAllNutrients = foods.getFoods()
+												.stream()
+												.filter(food -> food.getNutrientValues()
+																	.stream()
+																	.map(nutrientValue -> nutrientValue.getNutrientId())
+																	.collect(Collectors.toSet())
+																	.containsAll(nutrientIds))
+												.collect(Collectors.toList());
+
+		//
 		for (Nutrient nutrient : nutrients)
 		{
-			List<FoodAndValue> values = foods	.getFoods()
-												.stream()
-												.map(food -> new FoodAndValue(food, food.getNutrientValues()
-																						.stream()
-																						.filter(value -> value	.getNutrientId()
-																												.equals(nutrient.getId()))
-																						.findFirst()
-																						.orElse(null)))
-												.filter(foodAndValue -> foodAndValue.getValue() != null)
-												.collect(Collectors.toList());
+			List<FoodAndValue> values = foodsWithAllNutrients	.stream()
+																.map(food -> new FoodAndValue(food, food.getNutrientValues()
+																										.stream()
+																										.filter(value -> value	.getNutrientId()
+																																.equals(nutrient.getId()))
+																										.findFirst()
+																										.orElse(null)))
+																.filter(foodAndValue -> foodAndValue.getValue() != null)
+																.collect(Collectors.toList());
 
 			//
 			double average = this.calculateAverage(values);
@@ -191,37 +213,31 @@ public class USDAFoodDBUtilsTest
 								});
 					});
 
-			//			groups	.entrySet()
-			//					.stream()
-			//					.sorted((e1, e2) -> Double.compare(	e1	.getKey()
-			//															.getMin(),
-			//														e2	.getKey()
-			//															.getMin()))
-			//					.forEach(groupEntry ->
-			//					{
-			//
-			//						System.out.println("Range: " + groupEntry.getKey() + "-----------------------------------------------");
-			//
-			//						groupEntry	.getValue()
-			//									.stream()
-			//									.sorted((fv1, fv2) -> fv1	.getFood()
-			//																.getName()
-			//																.compareTo(fv2	.getFood()
-			//																				.getName()))
-			//									.map(foodAndValue -> "  " + foodAndValue.getFood()
-			//																			.getName()
-			//											+ ":" + foodAndValue.getValue()
-			//																.getAmount())
-			//									.forEach(System.out::println);
-			//					});
-
 		}
 
-		Map<Integer, Set<Food>> groupToFoodMap = new TreeMap<>();
+		//
+		Set<String> blackList = Arrays	.asList("vinegar", "acetate", "acetic", "cider", "balsamic", "alcohol", "sauerkraut", "mayonnaise")
+										.stream()
+										.collect(Collectors.toSet());
+		Set<String> foodIdBlackList = foods	.getFoods()
+											.stream()
+											.filter(food -> blackList	.stream()
+																		.anyMatch(blackTerm -> food	.getName()
+																									.toLowerCase()
+																									.contains(blackTerm.toLowerCase())))
+											.peek(food -> System.out.println("Black listed: " + food.getName()))
+											.map(food -> food.getNdbno())
+											.collect(Collectors.toSet());
 
-		Map<String, Food> foodIdToFoodMap = foods	.getFoods()
-													.stream()
-													.collect(Collectors.toMap(food -> food.getNdbno(), food -> food));
+		foodIdToBucketIdsMap.entrySet()
+							.stream()
+							.filter(entry -> foodIdBlackList.contains(entry.getKey()))
+							.forEach(entry -> entry	.getValue()
+													.add(Intensity.values().length - 1));
+
+		Map<Integer, Set<Food>> groupToFoodMap = new TreeMap<>();
+		Map<String, Food> foodIdToFoodMap = foodsWithAllNutrients	.stream()
+																	.collect(Collectors.toMap(food -> food.getNdbno(), food -> food));
 
 		foodIdToBucketIdsMap.entrySet()
 							.stream()
@@ -244,7 +260,15 @@ public class USDAFoodDBUtilsTest
 						{
 							int groupId = groupAndFood.getKey();
 
-							System.out.println("Bucket: " + groupId);
+							Intensity intensity = Intensity.values()[groupId];
+
+							PDFBuilderWithPage pdfBuilder = PDFUtils.getPDFInstance()
+																	.createEmptyPDF()
+																	.addBlankPage();
+							String title = "Levels:" + intensity;
+							pdfBuilder.addTitle(title);
+							pdfBuilder.addSubTitle("Tryptophan,Tyrosine,Phenylalanine,Histidine,Alcohol,Acetic acid and sugar levels");
+							System.out.println(title);
 
 							Set<Food> foodSet = groupAndFood.getValue();
 
@@ -252,7 +276,21 @@ public class USDAFoodDBUtilsTest
 									.sorted((f1, f2) -> f1	.getName()
 															.compareTo(f2.getName()))
 									.map(food -> "" + food.getName())
-									.forEach(System.out::println);
+									.forEach(name ->
+									{
+										pdfBuilder.addText(name);
+										System.out.println(name);
+									});
+
+							try
+							{
+								pdfBuilder	.build()
+											.write(new File("C:/Temp/foodlist_" + intensity + ".pdf"));
+							}
+							catch (IOException e)
+							{
+								e.printStackTrace();
+							}
 						});
 
 	}
