@@ -27,13 +27,12 @@ import org.omnaest.utils.JSONHelper;
 
 public class USDAFoodDBRestUtilsTest
 {
-	private static final String API_KEY = "UCmapXPH39utkRDoElGVemeISzSQmDROHyb2c9Kf";
 
 	@Test
 	@Ignore
 	public void testGetNutrients() throws Exception
 	{
-		List<Nutrient> nutrients = USDAFoodDBRestUtils.getNutrients(API_KEY);
+		List<Nutrient> nutrients = USDAFoodDBRestUtils.getNutrients(Constants.API_KEY);
 		System.out.println(JSONHelper.prettyPrint(nutrients));
 	}
 
