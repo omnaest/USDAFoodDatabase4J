@@ -100,6 +100,11 @@ public class Food
 										.collect(Collectors.toList());
 	}
 
+	public NutrientValue getNutrientValue(String nutrientId)
+	{
+		return this.nutrientIdToValueMap.get(nutrientId);
+	}
+
 	@Override
 	public String toString()
 	{
