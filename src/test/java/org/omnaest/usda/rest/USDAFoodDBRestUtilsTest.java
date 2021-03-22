@@ -16,24 +16,24 @@
 
 
 */
-package org.omnaest.usda;
+package org.omnaest.usda.rest;
 
 import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.omnaest.usda.Constants;
 import org.omnaest.usda.domain.Nutrient;
 import org.omnaest.utils.JSONHelper;
 
 public class USDAFoodDBRestUtilsTest
 {
 
-	@Test
-	@Ignore
-	public void testGetNutrients() throws Exception
-	{
-		List<Nutrient> nutrients = USDAFoodDBRestUtils.getNutrients(Constants.API_KEY);
-		System.out.println(JSONHelper.prettyPrint(nutrients));
-	}
-
+    @Test
+    @Ignore
+    public void testGetNutrients() throws Exception
+    {
+        List<Nutrient> nutrients = USDAFoodDBRestUtils.getNutrients(Constants.API_KEY);
+        System.out.println(JSONHelper.prettyPrint(nutrients));
+    }
 }

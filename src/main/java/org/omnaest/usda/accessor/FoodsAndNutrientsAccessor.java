@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.omnaest.usda.domain.FoodsAndNutrients;
+import org.omnaest.usda.domain.index.FoodIndex;
 
 /**
  * Accessor of the data of the USDA database
@@ -33,24 +34,30 @@ import org.omnaest.usda.domain.FoodsAndNutrients;
  */
 public interface FoodsAndNutrientsAccessor
 {
-	public interface FoodsAndNutrientsAccessorWithLoadedData extends FoodsAndNutrientsAccessor
-	{
-		public FoodsAndNutrientsAccessorWithLoadedData writeToFile(File file) throws IOException;
+    public interface FoodsAndNutrientsAccessorWithLoadedData extends FoodsAndNutrientsAccessor
+    {
+        public FoodsAndNutrientsAccessorWithLoadedData writeToFile(File file) throws IOException;
 
-		public FoodsAndNutrients get();
-	}
+        public FoodsAndNutrients get();
+    }
 
-	public FoodsAndNutrientsAccessorWithLoadedData loadFromRestAPI();
+    public FoodsAndNutrientsAccessorWithLoadedData loadFromRestAPI();
 
-	public FoodsAndNutrientsAccessorWithLoadedData readFromFile(File file) throws IOException;
+    public FoodIndex loadFullDatabaseFromPortal();
 
-	/**
-	 * Uses the given {@link File} as cache and reads the database from rest api if necessary and fills the file cache with the data
-	 *
-	 * @param file
-	 * @return
-	 * @throws IOException
-	 */
-	public FoodsAndNutrientsAccessorWithLoadedData readFromFileCacheOrLoadFromRestAPIIfNotPresent(File file) throws IOException;
+    public FoodIndex loadFullDatabaseFromPortal(int numberOfEntriesLimit);
+
+    public FoodsAndNutrientsAccessorWithLoadedData readFromFile(File file) throws IOException;
+
+    /**
+     * Uses the given {@link File} as cache and reads the database from rest api if necessary and fills the file cache with the data
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public FoodsAndNutrientsAccessorWithLoadedData readFromFileCacheOrLoadFromRestAPIIfNotPresent(File file) throws IOException;
+
+    public FoodsAndNutrientsAccessor withApiKey(String apiKey);
 
 }
