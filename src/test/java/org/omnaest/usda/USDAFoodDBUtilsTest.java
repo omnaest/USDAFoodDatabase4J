@@ -353,6 +353,7 @@ public class USDAFoodDBUtilsTest
     }
 
     @Test
+    @Ignore
     public void testGetAccessorInstance() throws Exception
     {
         FoodIndex foodIndex = USDAFoodDBUtils.getAccessorInstance()
